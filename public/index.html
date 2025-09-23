@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>IPFS Chat</title>
+</head>
+
+<body>
+    <h1>Chat</h1>
+    <div id="messages"></div>
+    <input id="msg" placeholder="Type a message..." />
+    <button onclick="sendMsg()">Send</button>
+
+    <script>
+        const ws = new WebSocket("ws://127.0.0.1:3001/ws");
+
+        ws.onopen = () => console.log("Connected to Rust WebSocket");
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const div = document.getElementById("messages");
+            div.innerHTML += `<p><b>${data.type}</b>: ${data.content || data.peerId || data.error || ""}</p>`;
+        };
+
+        function sendMsg() {
+            const input = document.getElementById("msg");
+            ws.send("send " + input.value);
+            input.value = "";
+        }
+    </script>
+</body>
+
+</html>
