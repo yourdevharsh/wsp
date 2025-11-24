@@ -1,4 +1,4 @@
-# 🌐 Multi-Stack P2P Chat Gateway
+# 🌐 wsp
 
 A proof-of-concept project demonstrating a three-tier architecture for a decentralized, real-time chat application using `libp2p` (Go) for networking, orchestrated by an asynchronous Rust backend, and exposed via a simple HTML/JavaScript frontend.
 
@@ -13,21 +13,20 @@ The system operates using a tri-layered architecture:
 1.  **P2P Network Layer (Go `main.go`):** The core Go binary initializes a `libp2p` node, connects to bootstrap peers, and uses a Distributed Hash Table (DHT) for peer discovery. It joins the global `"chat-room"` topic using **GossipSub** for public messaging. This layer communicates solely through structured JSON objects (events) via standard output (`stdout`) and accepts commands (like `send` and `connect`) via standard input (`stdin`).
 
 2.  **Gateway/Orchestration Layer (Rust `main.rs`):** The Rust executable acts as the system broker. It performs three key functions concurrently:
-
-      * Spawns and manages the Go P2P process.
-      * Runs a **WebSocket server** on `127.0.0.1:3001`.
-      * **Bridges Communication:** It reads JSON events from the Go process's `stdout` and broadcasts them to all connected WebSocket clients. Conversely, it reads commands from the WebSocket clients and forwards them to the Go process's `stdin`.
-      * Serves the static HTML frontend.
+    * Spawns and manages the Go P2P process.
+    * Runs a **WebSocket server** on `127.0.0.1:3001`.
+    * **Bridges Communication:** It reads JSON events from the Go process's `stdout` and broadcasts them to all connected WebSocket clients. Conversely, it reads commands from the WebSocket clients and forwards them to the Go process's `stdin`.
+    * Serves the static HTML frontend.
 
 3.  **Presentation Layer (HTML/JavaScript `index.html`):** A simple, standard web page that connects to the Rust WebSocket gateway. It sends user messages as commands and updates the UI in real-time based on the JSON events received from the decentralized network.
 
 ## ✨ Features
 
-  * **Peer-to-Peer Messaging:** Utilizes `libp2p`'s GossipSub protocol for efficient, resilient, and un-censorable chat broadcast.
-  * **Decentralized Discovery:** Implements Kademlia DHT for automated peer finding within the network using the `"chat-room"` service tag.
-  * **NAT Traversal:** Automatically enables **Relay** and **Hole Punching** to allow nodes behind NATs or firewalls to connect.
-  * **Real-time Web UI:** Simple HTML/JS frontend provides a quick way to interact with the P2P network via a WebSocket bridge.
-  * **Multi-Language Stack:** Combines the networking power of **Go** with the concurrent efficiency of **Rust** and the universal access of **JavaScript**.
+* **Peer-to-Peer Messaging:** Utilizes `libp2p`'s GossipSub protocol for efficient, resilient, and un-censorable chat broadcast.
+* **Decentralized Discovery:** Implements Kademlia DHT for automated peer finding within the network using the `"chat-room"` service tag.
+* **NAT Traversal:** Automatically enables **Relay** and **Hole Punching** to allow nodes behind NATs or firewalls to connect.
+* **Real-time Web UI:** Simple HTML/JS frontend provides a quick way to interact with the P2P network via a WebSocket bridge.
+* **Multi-Language Stack:** Combines the networking power of **Go** with the concurrent efficiency of **Rust** and the universal access of **JavaScript**.
 
 ## 💻 Tech Stack
 
@@ -45,8 +44,8 @@ To run this project, you will need both the Go and Rust toolchains installed.
 
 ### Prerequisites
 
-  * **Go:** Version 1.18+
-  * **Rust:** Stable channel with Cargo
+* **Go:** Version 1.18+
+* **Rust:** Stable channel with Cargo
 
 ### Setup and Installation
 
@@ -74,10 +73,9 @@ To run this project, you will need both the Go and Rust toolchains installed.
     ```
 
 3.  **Usage**
-
-      * Open your web browser and navigate to the UI address, typically **`http://127.0.0.1:8080`**.
-      * Since this is a P2P application, you must run at least two instances on different machines (or use tools like ngrok/tailscale to expose your ports) to see messages being routed across the network.
-      * Type a message into the input field and click "Send". This command is routed: `HTML -> Rust WS -> Go STDIN -> libp2p Network -> other peers`.
+    * Open your web browser and navigate to the UI address, typically **`http://127.0.0.1:8080`**.
+    * Since this is a P2P application, you must run at least two instances on different machines (or use tools like ngrok/tailscale to expose your ports) to see messages being routed across the network.
+    * Type a message into the input field and click "Send". This command is routed: `HTML -> Rust WS -> Go STDIN -> libp2p Network -> other peers`.
 
 ## 📐 System Design and Architecture
 
@@ -93,28 +91,28 @@ The design uses a clean separation of concerns, treating the decentralized netwo
 
 The current IPC mechanism between Rust and Go relies on **Standard Input/Output (STDIN/STDOUT)**, where structured data is passed as JSON.
 
-  * **Go (Emitters):** Writes JSON events (`{"type": "message", "content": "..."}`) to `stdout`.
-  * **Rust (Listeners):** Uses `BufReader` on the Go process's `stdout` to read and parse these JSON lines, which are then broadcast via a `tokio::sync::broadcast` channel to the active WebSocket clients.
-  * **Rust (Senders):** Locks a mutex-protected handle to the Go process's `stdin` to write command strings (`send <message>`).
+* **Go (Emitters):** Writes JSON events (`{"type": "message", "content": "..."}`) to `stdout`.
+* **Rust (Listeners):** Uses `BufReader` on the Go process's `stdout` to read and parse these JSON lines, which are then broadcast via a `tokio::sync::broadcast` channel to the active WebSocket clients.
+* **Rust (Senders):** Locks a mutex-protected handle to the Go process's `stdin` to write command strings (`send <message>`).
 
 ### Potential System Improvements
 
-  * **Replace STDIN/STDOUT IPC:** Using a more structured protocol like **gRPC** or a simple **HTTP API** between the Rust gateway and the Go core would provide better error handling, clearer schema definitions, and eliminate the overhead of line-by-line JSON parsing from standard streams.
-  * **Bundle Go Binary:** Instead of using `go run main.go`, the Rust program should execute a pre-compiled Go binary for faster startup and easier deployment.
+* **Replace STDIN/STDOUT IPC:** Using a more structured protocol like **gRPC** or a simple **HTTP API** between the Rust gateway and the Go core would provide better error handling, clearer schema definitions, and eliminate the overhead of line-by-line JSON parsing from standard streams.
+* **Bundle Go Binary:** Instead of using `go run main.go`, the Rust program should execute a pre-compiled Go binary for faster startup and easier deployment.
 
 ## 📊 DSA Analysis and Potential Improvements
 
 ### Kademlia Distributed Hash Table (DHT)
 
-  * **Data Structure:** The DHT implements a key-value store used primarily for peer routing and service discovery. It relies on a special **XOR metric** for distance calculation between peer IDs.
-  * **Algorithm:** Kademlia provides lookups (for finding peers associated with the `"chat-room"` topic) with a theoretical complexity of **$O(\log N)$**, where $N$ is the number of nodes in the network. This ensures efficient peer discovery even in very large networks.
-  * **Potential Improvement:** Implement custom record storage on the DHT if the application were to require persistent, decentralized data (e.g., user profiles or stored message history).
+* **Data Structure:** The DHT implements a key-value store used primarily for peer routing and service discovery. It relies on a special **XOR metric** for distance calculation between peer IDs.
+* **Algorithm:** Kademlia provides lookups (for finding peers associated with the `"chat-room"` topic) with a theoretical complexity of **$O(\log N)$**, where $N$ is the number of nodes in the network. This ensures efficient peer discovery even in very large networks.
+* **Potential Improvement:** Implement custom record storage on the DHT if the application were to require persistent, decentralized data (e.g., user profiles or stored message history).
 
 ### GossipSub
 
-  * **Data Structure/Overlay:** GossipSub uses a probabilistic, sparse overlay network built on top of the full P2P mesh. Each peer maintains a small, constant number of connections for a given topic.
-  * **Algorithm:** Messages are quickly propagated through a "gossip" phase to randomly selected peers and then reliably delivered to a smaller "mesh" network of highly trusted peers. This achieves a balance between the speed and resilience of full flooding and the efficiency of a single-source broadcast.
-  * **Potential Improvement:** Fine-tuning the GossipSub parameters (D, D\_low, D\_high) to optimize for the specific use case (e.g., prioritize lower latency over bandwidth, or vice-versa) based on network conditions and expected usage patterns.
+* **Data Structure/Overlay:** GossipSub uses a probabilistic, sparse overlay network built on top of the full P2P mesh. Each peer maintains a small, constant number of connections for a given topic.
+* **Algorithm:** Messages are quickly propagated through a "gossip" phase to randomly selected peers and then reliably delivered to a smaller "mesh" network of highly trusted peers. This achieves a balance between the speed and resilience of full flooding and the efficiency of a single-source broadcast.
+* **Potential Improvement:** Fine-tuning the GossipSub parameters (D, D\_low, D\_high) to optimize for the specific use case (e.g., prioritize lower latency over bandwidth, or vice-versa) based on network conditions and expected usage patterns.
 
 ## 📈 Performance Metrics
 
@@ -146,7 +144,7 @@ This project demonstrates the core functionality needed for several next-generat
 
 ## 🔮 Future Updates
 
-  * **Direct Messaging (DM):** Implement secure, encrypted peer-to-peer streams on a one-to-one basis using the `libp2p` secure channel.
-  * **Persistence:** Integrate a decentralized storage solution (like a local database or IPFS content addressing) to store messages history, rather than just relaying live messages.
-  * **Structured IPC (Rust/Go):** Refactor the STDIN/STDOUT communication to use a more robust IPC method like gRPC for better schema validation and reduced runtime errors.
-  * **WebAssembly Client:** Compile the Go `libp2p` core directly to WebAssembly to run the P2P node natively in the browser, eliminating the need for the Rust WebSocket gateway.
+* **Direct Messaging (DM):** Implement secure, encrypted peer-to-peer streams on a one-to-one basis using the `libp2p` secure channel.
+* **Persistence:** Integrate a decentralized storage solution (like a local database or IPFS content addressing) to store messages history, rather than just relaying live messages.
+* **Structured IPC (Rust/Go):** Refactor the STDIN/STDOUT communication to use a more robust IPC method like gRPC for better schema validation and reduced runtime errors.
+* **WebAssembly Client:** Compile the Go `libp2p` core directly to WebAssembly to run the P2P node natively in the browser, eliminating the need for the Rust WebSocket gateway.
